@@ -82,6 +82,5 @@ async def collect_sessions(con: DuckDBPyConnection, session_threshold=3600):
                         for key, (session_start, session_end) in sessions.items()
                     ],
                 )
-                ...  # save to db
 
         await trio.sleep(60)
