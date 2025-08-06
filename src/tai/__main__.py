@@ -8,8 +8,8 @@ from tai.database import init_db
 async def main():
     """Module entrypoint"""
     init_db()
-    async with trio.open_nursery() as n:
-        with duckdb.connect('database.db') as con:
+    with duckdb.connect('database.db') as con:
+        async with trio.open_nursery() as n:
             n.start_soon(collect_sessions, con)
 
 
