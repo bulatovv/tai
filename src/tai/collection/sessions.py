@@ -102,10 +102,7 @@ async def collect_sessions(con: DuckDBPyConnection, session_threshold=3600):
                 )
                 con.execute(
                     'insert into sessions (player, session_start, session_end) values (?, ?, ?)',
-                    [
-                        (key, session_start, session_end)
-                        for key, (session_start, session_end) in sessions.items()
-                    ],
+                    (player, session_start, session_end),
                 )
 
         await trio.sleep(60)
