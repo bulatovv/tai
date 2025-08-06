@@ -1,4 +1,5 @@
 import time
+from datetime import datetime
 
 import samp_query
 import trio
@@ -6,6 +7,22 @@ from duckdb import DuckDBPyConnection
 
 from tai.logging import log
 from tai.settings import settings
+
+
+def format_timestamp(timestamp: int) -> str:
+    """Format Unix timestamp as ISO datetime string.
+
+    Parameters
+    ----------
+    timestamp : int
+        Unix timestamp to format.
+
+    Returns
+    -------
+    str
+        ISO formatted datetime string.
+    """
+    return datetime.fromtimestamp(timestamp).isoformat()
 
 
 async def collect_sessions(con: DuckDBPyConnection, session_threshold=3600):
@@ -44,9 +61,17 @@ async def collect_sessions(con: DuckDBPyConnection, session_threshold=3600):
         for player in newly_connected:
             session_start = int(time.time())
             if player not in sessions:
-                log.debug('session_started', player=player, session_start=session_start)
+                log.debug(
+                    'session_started',
+                    player=player,
+                    session_start=format_timestamp(session_start),
+                )
             else:
-                log.debug('session_renewed', player=player, session_start=session_start)
+                log.debug(
+                    'session_renewed',
+                    player=player,
+                    session_start=format_timestamp(session_start),
+                )
 
             sessions[player] = (session_start, None)
 
@@ -58,8 +83,8 @@ async def collect_sessions(con: DuckDBPyConnection, session_threshold=3600):
             log.debug(
                 'session_suspended',
                 player=player,
-                session_start=session_start,
-                session_end=session_end,
+                session_start=format_timestamp(session_start),
+                session_end=format_timestamp(session_end),
             )
 
         for player in list(sessions):
@@ -72,8 +97,8 @@ async def collect_sessions(con: DuckDBPyConnection, session_threshold=3600):
                 log.debug(
                     'session_saved',
                     player=player,
-                    session_start=session_start,
-                    sesssion_end=session_end,
+                    session_start=format_timestamp(session_start),
+                    sesssion_end=format_timestamp(session_end),
                 )
                 con.execute(
                     'insert into sessions (player, session_start, session_end) values (?, ?, ?)',
