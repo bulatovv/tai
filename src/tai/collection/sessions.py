@@ -1,10 +1,10 @@
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 import samp_query
 import trio
-from duckdb import DuckDBPyConnection
 
+from tai.database.connector import get_connection
 from tai.logging import log
 from tai.settings import settings
 
@@ -25,13 +25,13 @@ def format_timestamp(timestamp: int) -> str:
     return datetime.fromtimestamp(timestamp).isoformat()
 
 
-async def collect_sessions(con: DuckDBPyConnection, session_threshold=3600):
+async def collect_sessions(db_path: str, session_threshold=1800):
     """Continuously monitor player connections and track gaming sessions.
 
     Parameters
     ----------
-    con : duckdb.DuckDBPyConnection
-        Database connection for storing session data.
+    db_path : str
+        Path to the database for storing session data.
     session_threshold : int, default 3600
         Time in seconds after disconnect before session is considered ended (1 hour).
 
@@ -47,7 +47,7 @@ async def collect_sessions(con: DuckDBPyConnection, session_threshold=3600):
 
     sessions: dict[str, tuple[int, int | None]] = {}
     while True:
-        with trio.move_on_after(3):
+        with trio.move_on_after(10):
             try:
                 players = set(p.name for p in (await client.players()).players)
             except trio.Cancelled:
@@ -87,6 +87,7 @@ async def collect_sessions(con: DuckDBPyConnection, session_threshold=3600):
                 session_end=format_timestamp(session_end),
             )
 
+        sessions_to_write = []
         for player in list(sessions):
             session_start, session_end = sessions[player]
             if session_end is None:
@@ -100,9 +101,20 @@ async def collect_sessions(con: DuckDBPyConnection, session_threshold=3600):
                     session_start=format_timestamp(session_start),
                     sesssion_end=format_timestamp(session_end),
                 )
-                con.execute(
+
+                dt_start = datetime.fromtimestamp(session_start, tz=timezone.utc).replace(
+                    tzinfo=None
+                )
+                dt_end = datetime.fromtimestamp(session_end, tz=timezone.utc).replace(
+                    tzinfo=None
+                )
+                sessions_to_write.append((player, dt_start, dt_end))
+
+        if sessions_to_write:
+            with get_connection(db_path) as con:
+                con.executemany(
                     'insert into sessions (player, session_start, session_end) values (?, ?, ?)',
-                    (player, session_start, session_end),
+                    sessions_to_write,
                 )
 
         await trio.sleep(60)

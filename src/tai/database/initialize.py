@@ -5,11 +5,12 @@ import duckdb
 from tai.logging import log
 
 
-def init_db():
-    """Initialize DuckDB database with schema from schema.sql file."""
-    con = duckdb.connect('database.db')
+def init_db(db_path: str, schema_path: str):
+    """Initialize DuckDB database with schema from a given SQL file."""
+    con = duckdb.connect(db_path)
     here = Path(__file__).resolve().parent
 
-    with (here / 'schema.sql').open() as file:
+    with (here / schema_path).open() as file:
         con.sql(file.read())
-        log.info('database_initialized')
+    con.close()
+    log.info('database_initialized', db_path=db_path, schema=schema_path)

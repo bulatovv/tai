@@ -1,5 +1,6 @@
 """Data collection utilities."""
 
+from .players import collect_players
 from .sessions import collect_sessions
 
-__all__ = ['collect_sessions']
+__all__ = ['collect_sessions', 'collect_players']

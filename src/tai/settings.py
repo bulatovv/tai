@@ -13,5 +13,7 @@ class Settings(BaseSettings):
     training_host: str = 'samp.training-server.com'
     training_port: int = 7777
 
+    training_api_base_url: str = 'https://training-server.com/api'
+
 
 settings = Settings()
