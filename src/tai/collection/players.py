@@ -107,18 +107,54 @@ async def collect_players(db_path: str, temp_db_path: str):
                 row['snapshot_time'] = snapshot_time
 
             _ = pl.from_dicts(first)
-            temp_con.execute('INSERT INTO players BY NAME SELECT * FROM _')
-            await trio.sleep(0.6)
+            res = temp_con.execute(
+                'INSERT INTO players BY NAME SELECT * FROM _ ON CONFLICT (id, snapshot_time) DO NOTHING RETURNING *'
+            ).fetchall()
+            inserted_count = len(res)
+            if inserted_count != len(first):
+                log.warning(
+                    'duplicate_players_found',
+                    page=1,
+                    expected=len(first),
+                    inserted=inserted_count,
+                )
+                base_url = settings.training_api_base_url
+                r = await client.get(f'{base_url}/user')
+                meta = r.json()['meta']
+                new_total_pages = meta['last_page']
+                if new_total_pages != total_pages:
+                    log.info('total_pages_changed', old=total_pages, new=new_total_pages)
+                    total_pages = new_total_pages
+            await trio.sleep(0.8)
 
-            for page in range(2, total_pages + 1):
+            page = 2
+            while page <= total_pages:
                 log.debug('fetch_players_page', page=page, of=total_pages)
                 page_data = await _fetch_players_page(client, page)
                 for row in page_data:
                     row['snapshot_time'] = snapshot_time
 
                 _ = pl.from_dicts(page_data)
-                temp_con.execute('INSERT INTO players BY NAME SELECT * FROM _')
-                await trio.sleep(0.6)
+                res = temp_con.execute(
+                    'INSERT INTO players BY NAME SELECT * FROM _ ON CONFLICT (id, snapshot_time) DO NOTHING RETURNING *'
+                ).fetchall()
+                inserted_count = len(res)
+                if inserted_count != len(page_data):
+                    log.warning(
+                        'duplicate_players_found',
+                        page=page,
+                        expected=len(page_data),
+                        inserted=inserted_count,
+                    )
+                    base_url = settings.training_api_base_url
+                    r = await client.get(f'{base_url}/user')
+                    meta = r.json()['meta']
+                    new_total_pages = meta['last_page']
+                    if new_total_pages != total_pages:
+                        log.info('total_pages_changed', old=total_pages, new=new_total_pages)
+                        total_pages = new_total_pages
+                await trio.sleep(0.8)
+                page += 1
 
     with get_connection(db_path) as main_con:
         main_con.execute(f"ATTACH '{temp_db_path}' AS temp_db")

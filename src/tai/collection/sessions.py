@@ -1,12 +1,12 @@
 import time
 from datetime import datetime, timezone
+from typing import NoReturn
 
-import samp_query
 import trio
 
 from tai.database.connector import get_connection
 from tai.logging import log
-from tai.settings import settings
+from tai.samp import create_client
 
 
 def format_timestamp(timestamp: int) -> str:
@@ -14,7 +14,7 @@ def format_timestamp(timestamp: int) -> str:
 
     Parameters
     ----------
-    timestamp : int
+    timestamp
         Unix timestamp to format.
 
     Returns
@@ -25,33 +25,31 @@ def format_timestamp(timestamp: int) -> str:
     return datetime.fromtimestamp(timestamp).isoformat()
 
 
-async def collect_sessions(db_path: str, session_threshold=1800):
+async def collect_sessions(db_path: str, session_threshold=1800) -> NoReturn:
     """Continuously monitor player connections and track gaming sessions.
 
     Parameters
     ----------
-    db_path : str
+    db_path
         Path to the database for storing session data.
-    session_threshold : int, default 3600
+    session_threshold
         Time in seconds after disconnect before session is considered ended (1 hour).
-
-    Returns
-    -------
-    None
-        Runs indefinitely until cancelled.
     """
     log.info('sessions_collection_started')
-    client = samp_query.Client(ip=settings.training_host, port=settings.training_port)
     players: set[str] = set()
     prev_players: set[str] = set()
 
     sessions: dict[str, tuple[int, int | None]] = {}
+    client = create_client()
     while True:
         with trio.move_on_after(10):
             try:
                 players = set(p.name for p in (await client.players()).players)
             except trio.Cancelled:
                 log.debug('samp_query_timeout')
+                continue
+            except Exception:
+                log.exception('failed_to_query_server_players')
                 continue
 
         newly_connected = players - prev_players

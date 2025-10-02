@@ -1,15 +1,16 @@
 import time
 from datetime import timedelta
 from pathlib import Path
+from typing import NoReturn
 
 import trio
 
-from tai.collection import collect_players, collect_sessions
+from tai.collection import collect_online, collect_players, collect_sessions
 from tai.database import init_db
 from tai.database.connector import get_connection
 
 
-async def weekly_players_collection(db_path: str, temp_db_path: str):
+async def weekly_players_collection(db_path: str, temp_db_path: str) -> NoReturn:
     """Periodically collect players data."""
     while True:
         with get_connection(db_path) as con:
@@ -41,14 +42,17 @@ async def main():
     sessions_db_path = str(data_dir / 'sessions.db')
     players_db_path = str(data_dir / 'players.db')
     players_temp_db_path = str(data_dir / 'players_temp.db')
+    online_db_path = str(data_dir / 'online.db')
 
     init_db(sessions_db_path, 'schema_sessions.sql')
     init_db(players_db_path, 'schema_players.sql')
     init_db(players_temp_db_path, 'schema_players.sql')
+    init_db(online_db_path, 'schema_online.sql')
 
     async with trio.open_nursery() as n:
         n.start_soon(collect_sessions, sessions_db_path)
         n.start_soon(weekly_players_collection, players_db_path, players_temp_db_path)
+        n.start_soon(collect_online, online_db_path)
 
 
 trio.run(main)
