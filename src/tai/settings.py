@@ -15,5 +15,9 @@ class Settings(BaseSettings):
 
     training_api_base_url: str = 'https://training-server.com/api'
 
+    chrono_login: str
+    chrono_token: str
+    chrono_api_base_url: str = 'https://chrono.czo.ooo/api'
+
 
 settings = Settings()

@@ -6,6 +6,7 @@ from typing import NoReturn
 import trio
 
 from tai.collection import collect_players, collect_sessions
+from tai.collection.worlds import collect_world_sessions, collect_worlds_online
 from tai.database import init_db
 from tai.database.connector import get_connection
 
@@ -43,15 +44,21 @@ async def main():
     players_db_path = str(data_dir / 'players.db')
     players_temp_db_path = str(data_dir / 'players_temp.db')
     online_db_path = str(data_dir / 'online.db')
+    worlds_online_db_path = str(data_dir / 'worlds_online.db')
+    world_sessions_db_path = str(data_dir / 'world_sessions.db')
 
     init_db(sessions_db_path, 'schema_sessions.sql')
     init_db(players_db_path, 'schema_players.sql')
     init_db(players_temp_db_path, 'schema_players.sql')
     init_db(online_db_path, 'schema_online.sql')
+    init_db(worlds_online_db_path, 'schema_worlds_online.sql')
+    init_db(world_sessions_db_path, 'schema_world_sessions.sql')
 
     async with trio.open_nursery() as n:
         n.start_soon(collect_sessions, sessions_db_path, online_db_path)
         n.start_soon(weekly_players_collection, players_db_path, players_temp_db_path)
+        n.start_soon(collect_worlds_online, worlds_online_db_path)
+        n.start_soon(collect_world_sessions, world_sessions_db_path)
 
 
 trio.run(main)
