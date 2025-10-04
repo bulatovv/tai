@@ -20,6 +20,7 @@ dependencies = [
 dev = [
     "basedpyright>=1.31.0",
     "pre-commit>=4.2.0",
+    "rich>=14.1.0",
     "ruff>=0.12.5",
 ]
 
