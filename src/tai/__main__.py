@@ -5,7 +5,7 @@ from typing import NoReturn
 
 import trio
 
-from tai.collection import collect_online, collect_players, collect_sessions
+from tai.collection import collect_players, collect_sessions
 from tai.database import init_db
 from tai.database.connector import get_connection
 
@@ -50,9 +50,8 @@ async def main():
     init_db(online_db_path, 'schema_online.sql')
 
     async with trio.open_nursery() as n:
-        n.start_soon(collect_sessions, sessions_db_path)
+        n.start_soon(collect_sessions, sessions_db_path, online_db_path)
         n.start_soon(weekly_players_collection, players_db_path, players_temp_db_path)
-        n.start_soon(collect_online, online_db_path)
 
 
 trio.run(main)

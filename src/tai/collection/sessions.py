@@ -25,25 +25,36 @@ def format_timestamp(timestamp: int) -> str:
     return datetime.fromtimestamp(timestamp).isoformat()
 
 
-async def collect_sessions(db_path: str, session_threshold=1800) -> NoReturn:
-    """Continuously monitor player connections and track gaming sessions.
+async def collect_sessions(
+    sessions_db_path: str,
+    online_db_path: str,
+    session_threshold: int = 1800,
+    delay: int = 60,
+) -> NoReturn:
+    """
+    Continuously monitor player connections and track gaming sessions.
 
     Parameters
     ----------
-    db_path
+    sessions_db_path
         Path to the database for storing session data.
+    online_db_path
+        Path to the database for storing online count data.
     session_threshold
         Time in seconds after disconnect before session is considered ended (1 hour).
+    delay
+        Time in seconds to wait between server queries.
     """
     log.info('sessions_collection_started')
     players: set[str] = set()
     prev_players: set[str] = set()
+    previous_online_count = None
 
     sessions: dict[str, tuple[int, int | None]] = {}
-    client = create_client()
     while True:
         with trio.move_on_after(10):
             try:
+                client = create_client()
                 players = set(p.name for p in (await client.players()).players)
             except trio.Cancelled:
                 log.debug('samp_query_timeout')
@@ -51,6 +62,21 @@ async def collect_sessions(db_path: str, session_threshold=1800) -> NoReturn:
             except Exception:
                 log.exception('failed_to_query_server_players')
                 continue
+
+        current_online_count = len(players)
+        if current_online_count != previous_online_count:
+            queried_at = datetime.now(timezone.utc).replace(microsecond=0).replace(tzinfo=None)
+            with get_connection(online_db_path) as con:
+                con.execute(
+                    'INSERT INTO online (online_count, queried_at) VALUES (?, ?)',
+                    (current_online_count, queried_at),
+                )
+            log.info(
+                'online_count_changed',
+                online_count=current_online_count,
+                queried_at=queried_at.isoformat(),
+            )
+            previous_online_count = current_online_count
 
         newly_connected = players - prev_players
         disconnected = prev_players - players
@@ -109,10 +135,10 @@ async def collect_sessions(db_path: str, session_threshold=1800) -> NoReturn:
                 sessions_to_write.append((player, dt_start, dt_end))
 
         if sessions_to_write:
-            with get_connection(db_path) as con:
+            with get_connection(sessions_db_path) as con:
                 con.executemany(
                     'insert into sessions (player, session_start, session_end) values (?, ?, ?)',
                     sessions_to_write,
                 )
 
-        await trio.sleep(60)
+        await trio.sleep(delay)
