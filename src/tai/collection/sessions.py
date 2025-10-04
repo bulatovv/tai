@@ -28,7 +28,7 @@ def format_timestamp(timestamp: int) -> str:
 async def collect_sessions(
     sessions_db_path: str,
     online_db_path: str,
-    session_threshold: int = 1800,
+    session_threshold: int = 2700,
     delay: int = 60,
 ) -> NoReturn:
     """
@@ -41,7 +41,7 @@ async def collect_sessions(
     online_db_path
         Path to the database for storing online count data.
     session_threshold
-        Time in seconds after disconnect before session is considered ended (1 hour).
+        Time in seconds after disconnect before session is considered ended (45 minutes).
     delay
         Time in seconds to wait between server queries.
     """
