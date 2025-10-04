@@ -71,7 +71,7 @@ async def collect_sessions(
                     'INSERT INTO online (online_count, queried_at) VALUES (?, ?)',
                     (current_online_count, queried_at),
                 )
-            log.info(
+            log.debug(
                 'online_count_changed',
                 online_count=current_online_count,
                 queried_at=queried_at.isoformat(),

@@ -74,6 +74,16 @@ async def collect_worlds_online(db_path: str, delay: int = 60) -> NoReturn:
                     current_worlds[world_name] = world_data
 
             if current_worlds != previous_worlds:
+                for world_name, world_data in current_worlds.items():
+                    prev_players = previous_worlds.get(world_name, {}).get('players')
+                    curr_players = world_data.get('players')
+                    if prev_players and prev_players != curr_players:
+                        log.debug(
+                            'world_online_count_changed',
+                            world_name=world_name,
+                            new_count=curr_players,
+                            old_count=prev_players,
+                        )
                 with get_connection(db_path) as con:
                     saved_count = 0
                     for world_name, world_data in current_worlds.items():
@@ -93,7 +103,7 @@ async def collect_worlds_online(db_path: str, delay: int = 60) -> NoReturn:
                             )
                             saved_count += 1
                     if saved_count > 0:
-                        log.info('worlds_data_saved', count=saved_count)
+                        log.debug('worlds_data_saved', count=saved_count)
 
                 previous_worlds = current_worlds
 

@@ -98,6 +98,7 @@ async def collect_players(db_path: str, temp_db_path: str):
     snapshot_time = datetime.now()
 
     with get_connection(temp_db_path) as temp_con:
+        log.warning('clearing_temp_players_table')
         temp_con.execute('DELETE FROM players')
         async with httpx.AsyncClient() as client:
             first, total_pages = await _fetch_first_page(client)
@@ -123,7 +124,7 @@ async def collect_players(db_path: str, temp_db_path: str):
                 meta = r.json()['meta']
                 new_total_pages = meta['last_page']
                 if new_total_pages != total_pages:
-                    log.info('total_pages_changed', old=total_pages, new=new_total_pages)
+                    log.warning('total_pages_changed', old=total_pages, new=new_total_pages)
                     total_pages = new_total_pages
             await trio.sleep(0.8)
 
