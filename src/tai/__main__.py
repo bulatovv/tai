@@ -1,5 +1,4 @@
-import time
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import NoReturn
 
@@ -20,19 +19,17 @@ async def weekly_players_collection(db_path: str, temp_db_path: str) -> NoReturn
                 ).fetchone()[0]
             except Exception:
                 last_collection_time = None
-        week = 604800
 
-        if not last_collection_time:
-            await collect_players(db_path, temp_db_path)
-        else:
-            wait_for = (
-                last_collection_time + timedelta(seconds=week)
-            ).timestamp() - time.time()
+        if last_collection_time:
+            # Calculate the time of the next collection
+            next_collection_time = last_collection_time + timedelta(weeks=1)
+            now = datetime.now()
+            wait_for = (next_collection_time - now).total_seconds()
+
             if wait_for > 0:
                 await trio.sleep(wait_for)
 
         await collect_players(db_path, temp_db_path)
-        await trio.sleep(week)
 
 
 async def main():
