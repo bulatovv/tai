@@ -101,3 +101,5 @@ All throw-away scripts, for example for explorative data analysis, must be place
 # ]
 # ///
 ```
+
+Use `uv run <script_path>` to run such scripts.
