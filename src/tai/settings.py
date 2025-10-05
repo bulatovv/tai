@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     log_level: str = 'INFO'
     log_json_format: bool = False
     log_include_stack: bool = False
+    log_exception_include_locals: bool = False
 
     training_host: str = 'samp.training-server.com'
     training_port: int = 7777

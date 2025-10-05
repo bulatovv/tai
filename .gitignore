@@ -17,3 +17,8 @@ data/
 .env
 .env.*
 !.env.example
+
+# Logs
+*.jsonl.*
+.jsonl
+.log

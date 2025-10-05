@@ -7,6 +7,7 @@ import trio
 from tai.collection import collect_players, collect_sessions, collect_worlds
 from tai.database import init_db
 from tai.database.connector import get_connection
+from tai.logging import log
 
 
 async def weekly_players_collection(db_path: str, temp_db_path: str) -> NoReturn:
@@ -34,6 +35,7 @@ async def weekly_players_collection(db_path: str, temp_db_path: str) -> NoReturn
 
 async def main():
     """Module entrypoint"""
+    log.info('tai_started')
     data_dir = Path('data')
     data_dir.mkdir(exist_ok=True)
     sessions_db_path = str(data_dir / 'sessions.db')
