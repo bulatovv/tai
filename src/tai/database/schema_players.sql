@@ -11,3 +11,8 @@ create table if not exists players (
     snapshot_time timestamp_s,
     primary key (id, snapshot_time)
 );
+
+ALTER TABLE players ADD COLUMN IF NOT EXISTS bonuspoints UINTEGER;
+ALTER TABLE players ADD COLUMN IF NOT EXISTS premium BOOLEAN;
+ALTER TABLE players ADD COLUMN IF NOT EXISTS premium_expdate TIMESTAMP_S;
+ALTER TABLE players ADD COLUMN IF NOT EXISTS chase_rating INTEGER;

@@ -11,7 +11,9 @@ from tai.logging import log
 from tai.settings import settings
 
 
-def _preproc_timestamp(timestamp: str | int) -> datetime | None:
+def _preproc_timestamp(timestamp: str | int | None) -> datetime | None:
+    if timestamp is None:
+        return None
     if timestamp == '1970-01-01 03:00:00':
         return None
     if timestamp == 0:
@@ -34,6 +36,10 @@ def _preproc_player(player: dict[str, Any]) -> dict[str, Any]:
         'lastlogin': _preproc_timestamp(player['lastlogin']),
         'playerid': player['playerid'] if player['online'] else None,
         'regdate': _preproc_timestamp(player['regdate']),
+        'bonuspoints': player['bonuspoints'],
+        'premium': bool(player['premium']),
+        'premium_expdate': _preproc_timestamp(player['premium_expdate']),
+        'chase_rating': player['chase_rating'],
         'warn': [
             warn | {'bantime': _preproc_timestamp(warn['bantime'])} for warn in player['warn']
         ],
