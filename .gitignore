@@ -20,5 +20,5 @@ data/
 
 # Logs
 *.jsonl.*
-.jsonl
-.log
+*.jsonl
+*.log
