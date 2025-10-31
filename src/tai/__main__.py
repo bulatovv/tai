@@ -30,7 +30,10 @@ async def weekly_players_collection(db_path: str, temp_db_path: str) -> NoReturn
             if wait_for > 0:
                 await trio.sleep(wait_for)
 
-        await collect_players(db_path, temp_db_path)
+        try:
+            await collect_players(db_path, temp_db_path)
+        except Exception as e:
+            log.error("players_collection_failed", error=e)
 
 
 async def main():
