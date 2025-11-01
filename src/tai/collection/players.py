@@ -55,7 +55,31 @@ async def _fetch_first_page(
     client: httpx.AsyncClient,
 ) -> tuple[list[dict[str, Any]], int]:
     base_url = settings.training_api_base_url
-    r = await client.get(f'{base_url}/user')
+    max_retry_attempts = 5
+    retry_delay = 1
+    r = None
+    for retry_attempt in range(1, max_retry_attempts + 1):
+        try:
+            r = await client.get(f'{base_url}/user')
+            r.raise_for_status()
+            break
+        except Exception as e:
+            if r and isinstance(e, httpx.HTTPStatusError) and r.status_code == 429:
+                delay = int(r.headers['Retry-After'])
+            else:
+                delay = retry_delay
+
+            log.warning(
+                'fetch_players_first_page_failed',
+                retry=retry_attempt,
+                of=max_retry_attempts,
+                waiting_for=delay,
+                error=type(e).__name__,
+                message=e,
+            )
+            await trio.sleep(delay)
+    else:
+        raise TimeoutError('All retry attempts failed')
     first = r.json()
     pages = first['meta']['last_page']
     return list(map(_preproc_player, r.json()['data'])), pages
