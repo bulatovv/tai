@@ -114,75 +114,123 @@ async def _collect_world_sessions(
 ) -> NoReturn:
     """Continuously monitor world connections and track gaming sessions."""
     log.info('world_sessions_collection_started')
-    worlds: set[str] = set()
+    active_sessions: dict[str, int] = {}
+    suspended_sessions: dict[
+        str, tuple[int, int]
+    ] = {}  # world_name -> (start_ts, suspended_ts)
     prev_worlds: set[str] = set()
+    is_first_iteration = True
 
-    sessions: dict[str, tuple[int, int | None]] = {}
     async for data in receiver:
-        worlds = {_strip_hex_codes(w['name']) for w in data['worlds']}
+        now = int(time.time())
+        current_worlds = {_strip_hex_codes(w['name']) for w in data['worlds']}
 
-        newly_connected = worlds - prev_worlds
-        disconnected = prev_worlds - worlds
-        prev_worlds = worlds
+        # --- Startup/Recovery Logic (First Iteration Only) ---
+        if is_first_iteration:
+            log.info('world_session_recovery_started')
+            recovered_worlds = set()
+            if current_worlds:
+                with get_connection(db_path) as con:
+                    threshold_time = datetime.fromtimestamp(
+                        now - session_threshold, tz=timezone.utc
+                    ).replace(tzinfo=None)
+                    query = """
+                        SELECT
+                            name,
+                            ARG_MAX(session_start, session_end) AS latest_start
+                        FROM world_sessions
+                        WHERE name IN (SELECT * FROM UNNEST(?))
+                        GROUP BY name
+                        HAVING MAX(session_end) > ?
+                    """
+                    recoverable = con.execute(
+                        query, (list(current_worlds), threshold_time)
+                    ).fetchall()
 
-        for world in newly_connected:
-            session_start = int(time.time())
-            if world not in sessions:
-                log.debug(
-                    'world_session_started',
-                    world=world,
-                    session_start=datetime.fromtimestamp(session_start).isoformat(),
-                )
-            else:
-                log.debug(
-                    'world_session_renewed',
-                    world=world,
-                    session_start=datetime.fromtimestamp(session_start).isoformat(),
-                )
+                    for world_name, session_start in recoverable:
+                        active_sessions[world_name] = int(session_start.timestamp())
+                        recovered_worlds.add(world_name)
+                        log.debug(
+                            'world_session_recovered',
+                            world=world_name,
+                            session_start=session_start.isoformat(),
+                        )
 
-            sessions[world] = (session_start, None)
+            newly_connected = current_worlds - recovered_worlds
+            is_first_iteration = False
+        else:
+            newly_connected = current_worlds - prev_worlds
 
+        disconnected = prev_worlds - current_worlds
+
+        # --- Handle Disconnected Worlds (Session Suspension) ---
         for world in disconnected:
-            session_start, session_end = sessions.pop(world)
-            assert session_end is None
-            session_end = int(time.time())
-            sessions[world] = session_start, session_end
-            log.debug(
-                'world_session_suspended',
-                world=world,
-                session_start=datetime.fromtimestamp(session_start).isoformat(),
-                session_end=datetime.fromtimestamp(session_end).isoformat(),
-            )
+            if world in active_sessions:
+                start_time = active_sessions.pop(world)
+                suspended_sessions[world] = (start_time, now)
+                log.debug(
+                    'world_session_suspended',
+                    world=world,
+                    start_time=datetime.fromtimestamp(start_time).isoformat(),
+                )
 
-        sessions_to_write = []
-        for world in list(sessions):
-            session_start, session_end = sessions[world]
-            if session_end is None:
-                continue
+        # --- Handle Newly Connected Worlds (Session Resume or New) ---
+        if newly_connected:
+            with get_connection(db_path) as con:
+                for world in newly_connected:
+                    if world in suspended_sessions:
+                        start_time, _ = suspended_sessions.pop(world)
+                        active_sessions[world] = start_time
+                        log.debug(
+                            'world_session_renewed',
+                            world=world,
+                            start_time=datetime.fromtimestamp(start_time).isoformat(),
+                        )
+                    else:
+                        start_time = now
+                        active_sessions[world] = start_time
+                        dt_start = datetime.fromtimestamp(start_time, tz=timezone.utc).replace(
+                            tzinfo=None
+                        )
+                        con.execute(
+                            'INSERT INTO world_sessions (name, session_start, session_end) VALUES (?, ?, ?)',
+                            (world, dt_start, dt_start),
+                        )
+                        log.debug(
+                            'world_session_started',
+                            world=world,
+                            session_start=dt_start.isoformat(),
+                        )
 
-            if time.time() - session_end > session_threshold:
-                sessions.pop(world)
+        # --- Finalize Expired Suspended Sessions ---
+        for world, (start_time, suspended_at) in list(suspended_sessions.items()):
+            if now - suspended_at > session_threshold:
+                del suspended_sessions[world]
                 log.debug(
                     'world_session_saved',
                     world=world,
-                    session_start=datetime.fromtimestamp(session_start).isoformat(),
-                    sesssion_end=datetime.fromtimestamp(session_end).isoformat(),
+                    start_time=datetime.fromtimestamp(start_time).isoformat(),
                 )
 
-                dt_start = datetime.fromtimestamp(session_start, tz=timezone.utc).replace(
-                    tzinfo=None
-                )
-                dt_end = datetime.fromtimestamp(session_end, tz=timezone.utc).replace(
-                    tzinfo=None
-                )
-                sessions_to_write.append((world, dt_start, dt_end))
-
-        if sessions_to_write:
+        # --- Update Active Sessions ---
+        if active_sessions:
             with get_connection(db_path) as con:
+                dt_now = datetime.fromtimestamp(now, tz=timezone.utc).replace(tzinfo=None)
+                update_data = [
+                    (
+                        dt_now,
+                        world,
+                        datetime.fromtimestamp(start_ts, tz=timezone.utc).replace(tzinfo=None),
+                    )
+                    for world, start_ts in active_sessions.items()
+                ]
                 con.executemany(
-                    'insert into world_sessions (name, session_start, session_end) values (?, ?, ?)',
-                    sessions_to_write,
+                    'UPDATE world_sessions SET session_end = ? WHERE name = ? AND session_start = ?',
+                    update_data,
                 )
+                log.debug('active_world_sessions_updated', count=len(active_sessions))
+
+        prev_worlds = current_worlds
 
 
 async def collect_worlds(
