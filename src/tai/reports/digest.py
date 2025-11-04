@@ -14,13 +14,8 @@ app = typer.Typer()
 console = Console()
 
 
-
-
-
 class Range(str, Enum):
     """Enumeration for the time range of the digest."""
-
-
 
     day = 'day'
 
@@ -31,36 +26,24 @@ class Range(str, Enum):
     year = 'year'
 
 
-
-
-
 def get_date_range(range_enum: Range, start_date_str: str | None):
     """Calculate the start and end dates for a given time range."""
 
-
-
     if start_date_str:
-
         start_date = datetime.fromisoformat(start_date_str).date()
 
     else:
-
         start_date = datetime.now().date()
 
-
-
     if range_enum == Range.day:
-
         end_date = start_date + timedelta(days=1)
 
     elif range_enum == Range.week:
-
         start_date = start_date - timedelta(days=start_date.weekday())
 
         end_date = start_date + timedelta(weeks=1)
 
     elif range_enum == Range.month:
-
         start_date = start_date.replace(day=1)
 
         next_month = start_date.replace(day=28) + timedelta(days=4)
@@ -68,33 +51,20 @@ def get_date_range(range_enum: Range, start_date_str: str | None):
         end_date = next_month - timedelta(days=next_month.day - 1)
 
     elif range_enum == Range.year:
-
         start_date = start_date.replace(month=1, day=1)
 
         end_date = start_date.replace(year=start_date.year + 1)
 
-
-
     return start_date, end_date
 
 
-
-
-
 def get_most_active_players(
-
     con: duckdb.DuckDBPyConnection,
-
     start_date: datetime.date,
-
     end_date: datetime.date,
-
     top_n: int = 10,
-
 ):
     """Get the most active players by total session duration."""
-
-
 
     query = """
 
@@ -121,23 +91,13 @@ def get_most_active_players(
     return df
 
 
-
-
-
 def get_most_popular_worlds(
-
     con: duckdb.DuckDBPyConnection,
-
     start_date: datetime.date,
-
     end_date: datetime.date,
-
     top_n: int = 10,
-
 ):
     """Get the most popular worlds based on an area-under-curve (AUC) score."""
-
-
 
     query = """
 
@@ -163,72 +123,39 @@ def get_most_popular_worlds(
 
     df = con.execute(query, [start_date, end_date]).pl()
 
-
-
     if df.height == 0:
-
         return pl.DataFrame()
 
-
-
     auc_scores = (
-
         df.group_by('name')
-
         .agg(
-
             pl.col('players').alias('players_list'),
-
             pl.col('time_elapsed').alias('time_elapsed_list'),
-
             pl.col('players').max().alias('peak_players'),
-
             pl.col('session_length_hours').first().alias('session_length'),
-
         )
-
         .with_columns(
-
             pl.struct(['players_list', 'time_elapsed_list'])
-
             .map_elements(
-
                 lambda s: np.trapezoid(
-
                     y=[0] + s['players_list'], x=[0] + s['time_elapsed_list']
-
                 ),
-
                 return_dtype=pl.Float64,
-
             )
-
             .alias('auc')
-
         )
-
         .select('name', 'auc', 'peak_players', 'session_length')
-
         .sort('auc', descending=True)
-
         .limit(top_n)
-
     )
 
     return auc_scores
 
 
-
-
-
 def get_peak_server_online(
-
     con: duckdb.DuckDBPyConnection, start_date: datetime.date, end_date: datetime.date
-
 ):
     """Get the peak number of players online within a given date range."""
-
-
 
     query = """
 
@@ -245,31 +172,13 @@ def get_peak_server_online(
     return result[0] if result else 0
 
 
-
-
-
 @app.command()
-
 def main(
-
-    range: Annotated[
-
-        Range, typer.Option(help='Time range for the digest.')
-
-    ] = Range.day,
-
+    range: Annotated[Range, typer.Option(help='Time range for the digest.')] = Range.day,
     start_date: Annotated[
-
         str | None,
-
-        typer.Option(
-
-            help='Start date in YYYY-MM-DD format. Defaults to current date.'
-
-        ),
-
+        typer.Option(help='Start date in YYYY-MM-DD format. Defaults to current date.'),
     ] = None,
-
 ):
     """Generates a digest of server activity."""
     start, end = get_date_range(range, start_date)
