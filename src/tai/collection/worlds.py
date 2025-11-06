@@ -91,7 +91,7 @@ async def _collect_worlds_online(
                             microsecond=0, tzinfo=None
                         )
                         con.execute(
-                            'INSERT OR REPLACE INTO worlds_online (name, players, static, ssmp, saved_at) VALUES (?, ?, ?, ?, ?)',
+                            'INSERT INTO worlds_online (name, players, static, ssmp, saved_at) VALUES (?, ?, ?, ?, ?)',
                             (
                                 world_name,
                                 world_data['players'],
