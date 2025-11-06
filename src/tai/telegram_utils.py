@@ -6,6 +6,7 @@ using 'aiogram' (for trio compatibility) and 'telegramify-markdown'.
 """
 
 import trio
+import trio_asyncio
 from aiogram import Bot
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -34,7 +35,7 @@ async def init_telegram_bot():
 
     try:
         # Test the connection and get bot info
-        await _bot.get_me()
+        await trio_asyncio.run_asyncio_task(_bot.get_me())
         log.info('telegram_bot_initialized_successfully')
     except TelegramAPIError as e:
         log.error('telegram_bot_init_failed', error=e.message)
@@ -50,6 +51,7 @@ async def shutdown_telegram_bot():
     """
     global _bot
     if _bot:
+        await trio_asyncio.run_asyncio_task(_bot.session.close())
         _bot = None
 
 
@@ -75,10 +77,12 @@ async def send_telegram_message(message_text: str, channel_id: str):
 
     for retry_attempt in range(1, max_retry_attempts + 1):
         try:
-            await _bot.send_message(
-                chat_id=channel_id,
-                text=formatted_text,
-                # parse_mode is already set in DefaultBotProperties
+            await trio_asyncio.run_asyncio_task(
+                _bot.send_message(
+                    chat_id=channel_id,
+                    text=formatted_text,
+                    # parse_mode is already set in DefaultBotProperties
+                )
             )
             log.info('telegram_message_sent_successfully', channel_id=channel_id)
             return  # Message sent, exit retry loop
