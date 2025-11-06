@@ -940,6 +940,7 @@ dependencies = [
     { name = "samp-query" },
     { name = "structlog" },
     { name = "tenacity" },
+    { name = "tlds" },
     { name = "trio" },
     { name = "trio-asyncio" },
     { name = "typer" },
@@ -964,6 +965,7 @@ requires-dist = [
     { name = "samp-query", specifier = ">=0.6.0" },
     { name = "structlog", specifier = ">=25.4.0" },
     { name = "tenacity", specifier = ">=8.5.0" },
+    { name = "tlds", specifier = ">=1.1.0" },
     { name = "trio", specifier = ">=0.30.0" },
     { name = "trio-asyncio", specifier = ">=0.15.0" },
     { name = "typer", specifier = ">=0.12.3" },
@@ -984,6 +986,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/0a/d4/2b0cd0fe285e14b36db076e78c93766ff1d529d70408bd1d2a5a84f1d929/tenacity-9.1.2.tar.gz", hash = "sha256:1169d376c297e7de388d18b4481760d478b0e99a777cad3a9c86e556f4b697cb", size = 48036, upload-time = "2025-04-02T08:25:09.966Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e5/30/643397144bfbfec6f6ef821f36f33e57d35946c44a2352d3c9f0ae847619/tenacity-9.1.2-py3-none-any.whl", hash = "sha256:f77bf36710d8b73a50b2dd155c97b870017ad21afe6ab300326b0371b3b05138", size = 28248, upload-time = "2025-04-02T08:25:07.678Z" },
+]
+
+[[package]]
+name = "tlds"
+version = "2025102200"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/13/ef/cbe4ef3e7f8efbb7d781ace17c626d49f677f55758cd07a56887927d04f4/tlds-2025102200.tar.gz", hash = "sha256:60c7f518420b4bb1b938f15b0754bd91be3976cdf38cb91f7e573f696865e819", size = 7826, upload-time = "2025-10-24T04:36:54.202Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6d/54/a94ebe610803619b56ae20f59165beb15c9284e7a7e0cdcdb3d6bb0f298d/tlds-2025102200-py2.py3-none-any.whl", hash = "sha256:2597ae45002fc1356086c9bfd0762f9c79e62a19268469b7828295358875b116", size = 8001, upload-time = "2025-10-24T04:36:51.867Z" },
 ]
 
 [[package]]

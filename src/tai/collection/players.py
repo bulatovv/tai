@@ -56,18 +56,19 @@ async def _fetch_first_page(
 ) -> tuple[list[dict[str, Any]], int]:
     base_url = settings.training_api_base_url
     max_retry_attempts = 5
-    retry_delay = 1
+    initial_retry_delay = 2  # Start with a 2-second delay
     r = None
     for retry_attempt in range(1, max_retry_attempts + 1):
         try:
-            r = await client.get(f'{base_url}/user')
+            r = await client.get(f'{base_url}/user', timeout=30.0)
             r.raise_for_status()
             break
         except Exception as e:
             if r and isinstance(e, httpx.HTTPStatusError) and r.status_code == 429:
                 delay = int(r.headers['Retry-After'])
             else:
-                delay = retry_delay
+                # Exponential backoff: 2s, 4s, 8s, 16s
+                delay = initial_retry_delay * (2 ** (retry_attempt - 1))
 
             log.warning(
                 'fetch_players_first_page_failed',
@@ -88,18 +89,19 @@ async def _fetch_first_page(
 async def _fetch_players_page(client: httpx.AsyncClient, page: int) -> list[dict[str, Any]]:
     base_url = settings.training_api_base_url
     max_retry_attempts = 5
-    retry_delay = 1
+    initial_retry_delay = 2  # Start with a 2-second delay
     r = None
     for retry_attempt in range(1, max_retry_attempts + 1):
         try:
-            r = await client.get(f'{base_url}/user?page={page}')
+            r = await client.get(f'{base_url}/user?page={page}', timeout=30.0)
             r.raise_for_status()
             break
         except Exception as e:
             if r and isinstance(e, httpx.HTTPStatusError) and r.status_code == 429:
                 delay = int(r.headers['Retry-After'])
             else:
-                delay = retry_delay
+                # Exponential backoff: 2s, 4s, 8s, 16s
+                delay = initial_retry_delay * (2 ** (retry_attempt - 1))
 
             log.warning(
                 'fetch_players_page_failed',
