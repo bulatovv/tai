@@ -9,7 +9,7 @@ import trio
 from aiogram import Bot
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.exceptions import TelegramError
+from aiogram.exceptions import TelegramAPIError
 from settings import settings
 from telegramify_markdown import telegramify_markdown
 
@@ -36,7 +36,7 @@ async def init_telegram_bot():
         # Test the connection and get bot info
         await _bot.get_me()
         log.info('telegram_bot_initialized_successfully')
-    except TelegramError as e:
+    except TelegramAPIError as e:
         log.error('telegram_bot_init_failed', error=e.message)
         _bot = None  # Reset on failure
         raise  # Raise the exception as requested by the user
@@ -66,7 +66,7 @@ async def send_telegram_message(message_text: str, channel_id: str):
     if _bot is None:
         log.error('telegram_send_skipped', reason='Bot is not initialized or failed to init.')
         # As per user instruction, raise an error if bot is not initialized
-        raise TelegramError('Telegram bot is not initialized.')
+        raise TelegramAPIError('Telegram bot is not initialized.')
 
     max_retry_attempts = 5
     initial_retry_delay = 2  # Start with a 2-second delay
@@ -82,7 +82,7 @@ async def send_telegram_message(message_text: str, channel_id: str):
             )
             log.info('telegram_message_sent_successfully', channel_id=channel_id)
             return  # Message sent, exit retry loop
-        except TelegramError as e:
+        except TelegramAPIError as e:
             delay = initial_retry_delay * (2 ** (retry_attempt - 1))
             log.warning(
                 'telegram_send_failed_api_error',
@@ -106,4 +106,6 @@ async def send_telegram_message(message_text: str, channel_id: str):
             await trio.sleep(delay)
 
     # If all retries fail, raise an exception
-    raise TelegramError(f'Failed to send Telegram message after {max_retry_attempts} attempts.')
+    raise TelegramAPIError(
+        f'Failed to send Telegram message after {max_retry_attempts} attempts.'
+    )
