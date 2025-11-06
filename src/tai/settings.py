@@ -22,6 +22,7 @@ class Settings(BaseSettings):
 
     telegram_bot_token: str
     telegram_channel_id: str
+    telegram_bot_id: str
 
 
 settings = Settings()

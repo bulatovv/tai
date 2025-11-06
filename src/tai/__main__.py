@@ -99,7 +99,9 @@ async def daily_digest_task() -> NoReturn:
                 report = render_digest_report(range_enum, start, end, data)
 
                 try:
-                    await send_telegram_message(report, settings.telegram_channel_id)
+                    await send_telegram_message(
+                        report, settings.telegram_channel_id, send_as=settings.telegram_bot_id
+                    )
                     log.info('daily_digest_sent_to_telegram', range=range_enum.value)
 
                 except Exception as e_telegram:
@@ -143,12 +145,6 @@ async def main():
 
     except Exception as e:
         log.critical('main_nursery_crashed', error=e)
-        # Final attempt to notify
-        try:
-            error_message = f'CRITICAL: Main task nursery crashed.\n\nError:\n```\n{e}\n```'
-            await send_telegram_message(error_message, settings.telegram_channel_id)
-        except Exception as e_telegram:
-            log.error('final_telegram_notification_failed', error=e_telegram)
 
     finally:
         # Clean up the Bot session
