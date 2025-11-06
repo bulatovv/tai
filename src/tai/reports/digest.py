@@ -280,17 +280,17 @@ def render_digest_report(
     active_players_df, popular_worlds_df, peak_online = data
 
     if range_enum == Range.day:
-        title = f'*Дайджест за {format_date_ru(start_date)}*'
+        title = f'**Дайджест за {format_date_ru(start_date)}**'
     elif range_enum == Range.week:
-        title = f'*Дайджест за неделю ({format_date_ru(start_date)} - {format_date_ru(end_date - timedelta(days=1))})*'
+        title = f'**Дайджест за неделю ({format_date_ru(start_date)} - {format_date_ru(end_date - timedelta(days=1))})**'
     elif range_enum == Range.month:
-        title = f'*Дайджест за {month_names_ru_nominative[start_date.month]}*'
+        title = f'**Дайджест за {month_names_ru_nominative[start_date.month]}**'
     elif range_enum == Range.year:
-        title = f'*Дайджест за {start_date.year} год*'
+        title = f'**Дайджест за {start_date.year} год**'
 
     report = [title]
 
-    report.append('\n*🏆 Самые активные игроки*')
+    report.append('\n**🏆 Самые активные игроки**')
     if not active_players_df.is_empty():
         for i, row in enumerate(active_players_df.iter_rows(named=True)):
             player_name = row['player']
@@ -306,7 +306,7 @@ def render_digest_report(
     else:
         report.append('Нет данных.')
 
-    report.append('\n*🌍 Самые популярные миры*')
+    report.append('\n**🌍 Самые популярные миры**')
     if not popular_worlds_df.is_empty():
         for row in popular_worlds_df.iter_rows(named=True):
             world_name = row['name']
@@ -332,7 +332,7 @@ def render_digest_report(
     else:
         report.append('Нет данных.')
 
-    report.append('\n*🚀 Пиковый онлайн на сервере*')
+    report.append('\n**🚀 Пиковый онлайн на сервере**')
     report.append(f'{peak_online} {pluralize_players(peak_online)}')
 
     return '\n'.join(report)
