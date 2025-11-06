@@ -20,5 +20,8 @@ class Settings(BaseSettings):
     chrono_token: str
     chrono_api_base_url: str = 'https://chrono.czo.ooo/api'
 
+    telegram_bot_token: str
+    telegram_channel_id: str
+
 
 settings = Settings()
