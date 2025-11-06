@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import NoReturn
 
 import trio
+import trio_asyncio
 
 from tai.collection import collect_players, collect_sessions, collect_worlds
 from tai.database import init_db
@@ -157,6 +158,6 @@ async def main():
 
 if __name__ == '__main__':
     try:
-        trio.run(main)
+        trio_asyncio.run(main)
     except KeyboardInterrupt:
         log.info('tai_shutdown_requested_by_user')
