@@ -35,7 +35,7 @@ async def init_telegram_bot():
 
     try:
         # Test the connection and get bot info
-        await trio_asyncio.run_asyncio_task(_bot.get_me())
+        await trio_asyncio.aio_as_trio(_bot.get_me())
         log.info('telegram_bot_initialized_successfully')
     except TelegramAPIError as e:
         log.error('telegram_bot_init_failed', error=e.message)
@@ -51,7 +51,7 @@ async def shutdown_telegram_bot():
     """
     global _bot
     if _bot:
-        await trio_asyncio.run_asyncio_task(_bot.session.close())
+        await trio_asyncio.aio_as_trio(_bot.session.close())
         _bot = None
 
 
@@ -77,7 +77,7 @@ async def send_telegram_message(message_text: str, channel_id: str):
 
     for retry_attempt in range(1, max_retry_attempts + 1):
         try:
-            await trio_asyncio.run_asyncio_task(
+            await trio_asyncio.aio_as_trio(
                 _bot.send_message(
                     chat_id=channel_id,
                     text=formatted_text,
