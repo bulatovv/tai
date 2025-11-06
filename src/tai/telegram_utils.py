@@ -48,10 +48,8 @@ async def shutdown_telegram_bot():
 
     Must be called once at application shutdown.
     """
+    global _bot
     if _bot:
-        log.info('telegram_bot_shutting_down')
-        await _bot.session.close()
-        global _bot
         _bot = None
 
 
