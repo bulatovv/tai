@@ -10,10 +10,10 @@ from aiogram import Bot
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramAPIError
-from settings import settings
 from telegramify_markdown import telegramify_markdown
 
 from tai.logging import log
+from tai.settings import settings
 
 # This bot instance will be initialized in main()
 _bot: Bot | None = None
