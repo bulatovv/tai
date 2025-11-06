@@ -5,16 +5,16 @@ Handles formatting and sending messages to the Telegram API
 using 'aiogram' (for trio compatibility) and 'telegramify-markdown'.
 """
 
+import telegramify_markdown
 import trio
 import trio_asyncio
 from aiogram import Bot
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramAPIError
-from settings import settings
-from telegramify_markdown import telegramify_markdown
 
 from tai.logging import log
+from tai.settings import settings
 
 # This bot instance will be initialized in main()
 _bot: Bot | None = None
@@ -68,12 +68,12 @@ async def send_telegram_message(message_text: str, channel_id: str):
     if _bot is None:
         log.error('telegram_send_skipped', reason='Bot is not initialized or failed to init.')
         # As per user instruction, raise an error if bot is not initialized
-        raise TelegramAPIError('Telegram bot is not initialized.')
+        raise RuntimeError('Telegram bot is not initialized.')
 
     max_retry_attempts = 5
     initial_retry_delay = 2  # Start with a 2-second delay
 
-    formatted_text = telegramify_markdown(message_text)
+    formatted_text = telegramify_markdown.markdownify(message_text)
 
     for retry_attempt in range(1, max_retry_attempts + 1):
         try:
@@ -110,6 +110,5 @@ async def send_telegram_message(message_text: str, channel_id: str):
             await trio.sleep(delay)
 
     # If all retries fail, raise an exception
-    raise TelegramAPIError(
-        f'Failed to send Telegram message after {max_retry_attempts} attempts.'
-    )
+    msg = f'Failed to send Telegram message after {max_retry_attempts} attempts.'
+    raise RuntimeError(msg)
