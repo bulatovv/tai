@@ -327,13 +327,12 @@ def render_digest_report(
 
             formatted_session_length = format_duration_rounded(session_length)
             report.append(
-                f'{emoji}`{world_name}`\n  👥 Пик: {peak_players} {pluralize_players(peak_players)}\n  ⏳ Длительность: {formatted_session_length}'
+                f'\n{emoji}`{world_name}`\n  👥 Пик: {peak_players} {pluralize_players(peak_players)}\n  ⏳ Длительность: {formatted_session_length}'
             )
     else:
         report.append('Нет данных.')
 
-    report.append('\n**🚀 Пиковый онлайн на сервере**')
-    report.append(f'{peak_online} {pluralize_players(peak_online)}')
+    report.append(f'\n**🚀 Пиковый онлайн:** {peak_online} {pluralize_players(peak_online)}')
 
     return '\n'.join(report)
 
