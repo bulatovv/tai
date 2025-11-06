@@ -81,7 +81,6 @@ async def send_telegram_message(message_text: str, channel_id: str, send_as: str
                 _bot.send_message(
                     chat_id=channel_id,
                     text=formatted_text,
-                    send_as=send_as,
                     # parse_mode is already set in DefaultBotProperties
                 )
             )
