@@ -62,34 +62,36 @@ async def daily_digest_task() -> NoReturn:
     """Periodically generate and post daily digests."""
     while True:
         now = datetime.now()
-        today_at_2359 = now.replace(hour=23, minute=59, second=0, microsecond=0)
+        # Schedule for 01:45
+        run_time_today = now.replace(hour=1, minute=45, second=0, microsecond=0)
 
-        if now > today_at_2359:
-            # It's past 23:59, so schedule for tomorrow
-            next_run_time = today_at_2359 + timedelta(days=1)
+        if now > run_time_today:
+            # It's past 01:45, so schedule for tomorrow
+            next_run_time = run_time_today + timedelta(days=1)
         else:
             # Schedule for today
-            next_run_time = today_at_2359
+            next_run_time = run_time_today
 
         wait_for = (next_run_time - now).total_seconds()
         log.info('daily_digest_task_sleeping', wait_for_seconds=wait_for)
         await trio.sleep(wait_for)
 
         try:
-            today = datetime.now().date()
+            # The report is for the previous day
+            report_date = (datetime.now() - timedelta(days=1)).date()
             range_enum = Range.day  # Default
 
             # is it end of year?
-            if today.month == 12 and today.day == 31:
+            if report_date.month == 12 and report_date.day == 31:
                 range_enum = Range.year
             # is it end of month?
-            elif (today + timedelta(days=1)).day == 1:
+            elif (report_date + timedelta(days=1)).day == 1:
                 range_enum = Range.month
             # is it end of week (sunday)?
-            elif today.weekday() == 6:
+            elif report_date.weekday() == 6:
                 range_enum = Range.week
 
-            start, end = get_date_range(range_enum, today.isoformat())
+            start, end = get_date_range(range_enum, report_date.isoformat())
 
             log.info('daily_digest_report_generation_started', range=range_enum.value)
             data = get_digest_data(start, end)
