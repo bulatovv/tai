@@ -227,7 +227,8 @@ def get_most_popular_worlds(
             pl.struct(['players_list', 'time_elapsed_list'])
             .map_elements(
                 lambda s: np.trapezoid(
-                    y=[0] + s['players_list'], x=[0] + s['time_elapsed_list']
+                    y=[0] + [max(0, y - 1) for y in s['players_list']],
+                    x=[0] + s['time_elapsed_list'],
                 ),
                 return_dtype=pl.Float64,
             )
