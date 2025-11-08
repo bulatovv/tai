@@ -95,16 +95,17 @@ async def collect_sessions(
     # --- Main Collection Loop ---
     while True:
         now = int(time.time())
+        players = None
         try:
             with trio.move_on_after(10):
                 client = create_client()
                 players = set(p.name for p in (await client.players()).players)
         except trio.Cancelled:
             log.debug('samp_query_timeout')
-            await trio.sleep(delay)
-            continue
         except Exception:
             log.exception('failed_to_query_server_players')
+
+        if players is None:
             await trio.sleep(delay)
             continue
 
