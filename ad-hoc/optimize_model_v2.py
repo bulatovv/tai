@@ -268,7 +268,7 @@ def extract_features_for_session(
         for t in c_tags:
             conc_stats['tag_player_sums'][t] += last_p
             
-        if set(c_tags) & set(my_tags):
+        if set(c_tags) & set(my_tags): # TODO: check if should weight by intersected tags or by jaccard syntax
             conc_stats['niche_comp_count'] += 1
             conc_stats['niche_comp_sum'] += last_p
         
@@ -310,7 +310,7 @@ def extract_features_for_session(
         features[f'concurrent_tag_{tag}_player_sum'] = conc_stats['tag_player_sums'].get(tag, 0)
 
     # IV. Recently Closed Session Features
-    lookback_start = start_time - timedelta(hours=3)
+    lookback_start = start_time - timedelta(minutes=10) # TODO: check if should use exponentialy decreasing weight over longer period?
     closed_cands = sessions_df[(sessions_df['session_end'] >= lookback_start) & (sessions_df['session_end'] <= obs_end) & (sessions_df['name'] != name)]
     
     closed_stats = {
